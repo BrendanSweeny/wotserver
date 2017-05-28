@@ -1,8 +1,9 @@
 "use strict";
 
 let express = require("express"),
-  sensorRoutes = require("./app/routes/sensors"),
-  resources = require("./resources/model");
+  sensorRoutes = require("../app/routes/sensors"),
+  resources = require("../resources/model"),
+  cors = require('cors');
 
 let app = express();
 

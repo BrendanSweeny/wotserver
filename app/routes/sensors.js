@@ -1,7 +1,7 @@
 "use strict";
 let express = require('express'),
   router = express.Router(),
-  resources = require('../resources/model');
+  resources = require('../../resources/model');
 
 let path = process.cwd();
 

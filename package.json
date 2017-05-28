@@ -9,6 +9,7 @@
   "author": "Brendan Sweeny",
   "license": "ISC",
   "dependencies": {
+    "cors": "^2.8.3",
     "express": "^4.14.0"
   }
 }
