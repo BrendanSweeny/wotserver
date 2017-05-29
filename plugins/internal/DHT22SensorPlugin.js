@@ -1,10 +1,12 @@
 "use strict";
 
-let resources = require("../..resources/model");
+let resources = require("../../resources/model");
 let utils = require("../../utils/utils");
+
+let interval, sensor;
 let model = resources.pi.sensors;
 let pluginName = "Temperature and Humidity";
-let localParams = {"simulate": false, "frequency": 2000};
+let localParams = {"simulate": false, "frequency": 5000};
 
 exports.start = (params) => {
   localParams = params;
@@ -32,7 +34,7 @@ function connectHardware() {
     },
     read: () => {
       let readout = sensorDriver.read();
-      model.temperature.value = parseFloat(readout.temperature.toFixed(2));
+      model.temperature.value = parseFloat(convertToF(readout.temperature).toFixed(2));
       model.humidity.value = parseFloat(readout.humidity.toFixed(2));
       showValue();
 
@@ -41,10 +43,16 @@ function connectHardware() {
       }, localParams.frequency);
     }
   }
+  if (sensor.initialize()) {
+    console.info("Hardware %s sensor started!", pluginName);
+    sensor.read();
+  } else {
+    console.warn("Failed to initialize %s sensor!", pluginName);
+  }
 };
 
 function simulate() {
-  interval = setInterval(() => {
+  let interval = setInterval(() => {
     model.temperature.value = utils.randomInt(60, 80);
     model.temperature.value = utils.randomInt(0, 100);
     showValue();
@@ -56,3 +64,8 @@ function showValue() {
   console.info("Temperature: %s F, Humidty: %s \%",
   model.temperature.value, model.humidity.value);
 };
+
+function convertToF(celsius) {
+  let fahrenheit = celsius * (9/5) + 32;
+  return fahrenheit;
+}
