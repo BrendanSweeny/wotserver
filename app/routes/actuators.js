@@ -4,38 +4,33 @@ let express = require("express"),
   router = express.Router(),
   resources = require('../../resources/model'),
   Gpio = require("onoff").Gpio,
-  pluginName = "LED",
-  localParams = {"simulate": false, "frequency": 5000},
-  actuator = new Gpio(resources.pi.actuators.leds[1].gpio, 'out');
+  ledController = require('../../plugins/internal/ledsPlugin.js'),
+  localParams = {"simulate": false, "frequency": 5000};
 
-let path = process.cwd();
+// Define LED Controllers and assign models
+let ledOne = new ledController(localParams, resources.pi.actuators.leds['1']);
+let ledTwo = new ledController(localParams, resources.pi.actuators.leds['2']);
 
-let handler = {
-  set: (target, key, val) => {
-    console.info("Setting value of %s", val);
-    target[key] = val; // Performs the change in state of the model
-    switchOnOff(val); // Performs the actual hardware change
-    return true;
-  }
-};
-
-function switchOnOff(value) {
-  if (!localParams.simulate) {
-    actuator.write(value === true ? 1 : 0, () => {
-      console.info("Proxy changed value of %s to %s!", pluginName, value);
-    })
-  }
-};
+// Initiate and connect hardware for LEDs based on assigned model
+ledOne.start();
+ledTwo.start();
 
 router.route('/leds/:id').get((req, res, next) => {
   req.result = resources.pi.actuators.leds[req.params.id];
   next();
 }).put((req, res, next) => {
-  let selectedLed = resources.pi.actuators.leds[req.params.id];
-  let proxy = new Proxy(selectedLed, handler);
-  proxy.value = req.body.value;
-  console.info("Changed LED %s value to %s", req.params.id, proxy.value);
-  req.result = selectedLed;
+  //console.info(JSON.stringify(ledOne.modelProxy), JSON.stringify(ledTwo.modelProxy));
+  if (req.params.id === '1') {
+    let selectedLed = resources.pi.actuators.leds[req.params.id];
+    let selectedLedProxy = ledOne.modelProxy;
+    selectedLedProxy.value = req.body.value;
+    req.result = selectedLed;
+  } else if (req.params.id === '2') {
+    let selectedLed = resources.pi.actuators.leds[req.params.id];
+    let selectedLedProxy = ledTwo.modelProxy;
+    selectedLedProxy.value = req.body.value;
+    req.result = selectedLed;
+  }
   next();
 });
 

@@ -2,56 +2,71 @@
 
 let resources = require("../../resources/model");
 let utils = require("../../utils/utils");
-let localParams = {"simulate": false, "frequency": 5000};
-let pluginName = "LED";
-let model = resources.pi.actuators.leds[1];
-let interval, actuator;
+let EventEmitter = require('events').EventEmitter;
 
-exports.start = (params) => {
-  localParams = params;
-  //observe(model);
-  //model.value = false;
+module.exports = class LedController extends EventEmitter {
 
-  if (localParams.simulate) {
-    simulate();
-  } else {
-    connectHardware();
+  constructor(params, model) {
+    super();
+    this.interval = undefined;
+    this.actuator = undefined;
+    this.model = model;
+    this.pluginName = this.model.name;
+    this.params = params;
+    this.modelProxy = new Proxy(this.model, this.ledHandler());
   }
-};
 
-exports.stop = () => {
-  if (localParams.simulate) {
-    clearInterval(interval);
-  } else {
-    actuator.unexport();
+  start(params) {
+    if (this.params.simulate) {
+      this.simulate();
+    } else {
+      this.connectHardware();
+      console.info("Hardware %s actuator started at GPIO: %s!", this.pluginName, this.model.gpio);
+    }
   }
-  console.log("%s plugin stopped!", pluginName);
-};
 
-let handler = {
-  get: (target, key) => {
-    console.info("Setting value of %s", key);
-    //switchOnOff(val);
+  stop() {
+    if (this.params.simulate) {
+      clearInterval(this.interval);
+    } else {
+      this.actuator.unexport();
+    }
   }
+
+  ledHandler() {
+    return {
+      set: (target, key, val) => {
+        console.info("The LED Proxy is changing the %s value to %s", JSON.stringify(target), val);
+        target[key] = val; // Performs the change in state of the model
+        this.switchOnOff(val); // Performs the actual hardware change
+        return true;
+      }
+    }
+  }
+
+  switchOnOff(value) {
+    console.info(this.model.name);
+    if (!this.params.simulate) {
+      this.actuator.write(value === true ? 1 : 0, () => {
+        console.info("LED Proxy has changed the value of %s to %s!", this.pluginName, value);
+      })
+    }
+  }
+
+  connectHardware() {
+    let Gpio = require("onoff").Gpio;
+    this.actuator = new Gpio(this.model.gpio, 'out');
+  }
+
+  simulate() {
+    this.interval = setInterval(function() {
+      if (this.modelProxy.value) {
+        this.modelProxy.value = false;
+      } else {
+        this.modelProxy.value = true;
+      }
+    }, this.params.frequency)
+    console.info('Simulated %s actuator started!', this.pluginName);
+  }
+
 }
-
-function observe(target) {
-  console.log(target);
-  console.info("Observe " + pluginName + " started!");
-  let proxy = new Proxy(target, handler);
-  console.info(proxy);
-};
-
-function switchOnOff(value) {
-  if (!localParams.simulate) {
-    actuator.write(value === true ? 1 : 0, () => {
-      console.info("Proxy changed value of %s to %s!", pluginName, value);
-    })
-  }
-};
-
-function connectHardware() {
-  let Gpio = require("onoff").Gpio;
-  actuator = new Gpio(model.gpio, 'out');
-  console.info("Hardware %s actuator started!", pluginName);
-};
