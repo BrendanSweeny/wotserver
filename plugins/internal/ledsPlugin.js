@@ -56,6 +56,16 @@ module.exports = class LedController extends EventEmitter {
   connectHardware() {
     let Gpio = require("onoff").Gpio;
     this.actuator = new Gpio(this.model.gpio, 'out');
+    this.status = {
+      read: () => {
+        let status = this.model.value;
+        this.emit(this.model.eventName);
+        setTimeout(() => {
+          this.status.read()
+        }, 5000)
+      }
+    }
+    this.status.read()
   }
 
   simulate() {

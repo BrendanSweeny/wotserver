@@ -7,6 +7,9 @@ let express = require("express"),
   cors = require('cors'),
   converter = require('../middleware/converter'),
   bodyParser = require('body-parser');
+  //coapPlugin = require('../plugins/external/coapPlugin');
+
+//coapPlugin.start({'simulate': false, 'frequency': 5000});
 
 let app = express();
 
@@ -15,7 +18,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 app.use("/pi/sensors", sensorRoutes);
-app.use("/pi/actuators", actuatorRoutes)
+app.use("/pi/actuators", actuatorRoutes);
 
 app.get("/pi", (req, res) => {
   res.send("Welcome to Wotserver. I'm not as smart as HAL, but also less murdery!")
